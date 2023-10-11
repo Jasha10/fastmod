@@ -13,6 +13,7 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
+bat = "0.23.0"
 clap = "2.31.2"
 crossterm = "0.24"
 diff = "0.1.11"

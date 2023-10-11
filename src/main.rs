@@ -35,6 +35,7 @@ use std::thread;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Error;
+use bat::PrettyPrinter;
 use clap::crate_version;
 use clap::App;
 use clap::Arg;
@@ -56,8 +57,6 @@ mod terminal;
 
 use rprompt::prompt_reply_stderr;
 use rprompt::prompt_reply_stdout;
-
-use crate::terminal::Color;
 
 type Result<T> = ::std::result::Result<T, Error>;
 
@@ -437,7 +436,7 @@ impl Fastmod {
         } else {
             println!("{}:{}-{}", path.to_string_lossy(), start_line, end_line);
         }
-        self.print_diff(&diffs);
+        self.print_diff(&diffs, &path);
         let mut user_input = if self.yes_to_all {
             'y'
         } else {
@@ -521,22 +520,39 @@ impl Fastmod {
         diffs
     }
 
-    fn print_diff<'a>(&mut self, diffs: &[DiffResult<&'a str>]) {
+    fn print_diff<'a>(&mut self, diffs: &[DiffResult<&'a str>], path: &Path) {
+        let mut output = String::new();
+        let mut printer = PrettyPrinter::new();
+        let mut line: usize = 0;
         for diff in diffs {
+            line += 1;
             match diff {
                 DiffResult::Left(l) => {
-                    terminal::fg(Color::Red);
-                    println!("- {}", l);
+                    output.push_str(&format!("- {}\n", l));
+                    printer.highlight(line);
                     terminal::reset();
                 }
-                DiffResult::Both(l, _) => println!("  {}", l),
+                DiffResult::Both(l, _) => {
+                    output.push_str(&format!("  {}\n", l));
+                }
                 DiffResult::Right(r) => {
-                    terminal::fg(Color::Green);
-                    println!("+ {}", r);
+                    output.push_str(&format!("+ {}\n", r));
+                    printer.highlight(line);
                     terminal::reset();
                 }
             }
         }
+        let mut output = output.as_bytes();
+        printer
+            .input_from_reader(&mut output)
+            .language(
+                path.extension()
+                    .and_then(|ext| ext.to_str())
+                    .unwrap_or("diff"),
+            )
+            .print()
+            .unwrap();
+        drop(printer)
     }
 
     fn run_interactive(

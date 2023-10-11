@@ -21,28 +21,10 @@ use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType;
 use crossterm::ExecutableCommand;
 
-pub enum Color {
-    Red,
-    Green,
-}
-
-impl Color {
-    pub fn to_crossterm_color(self) -> crossterm::style::Color {
-        match self {
-            Color::Red => crossterm::style::Color::DarkRed,
-            Color::Green => crossterm::style::Color::DarkGreen,
-        }
-    }
-}
-
 pub fn clear() {
     if io::stdout().execute(Clear(ClearType::All)).is_err() {
         print!("{}", "\n".repeat(8));
     }
-}
-
-pub fn fg(color: Color) {
-    let _ = io::stdout().execute(SetForegroundColor(color.to_crossterm_color()));
 }
 
 pub fn reset() {
